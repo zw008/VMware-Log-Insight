@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "vmware-log-insight": {
+      "command": "uvx",
+      "args": ["--from", "vmware-log-insight", "vmware-log-insight-mcp"],
+      "env": {
+        "VMWARE_LOG_INSIGHT_CONFIG": "~/.vmware-log-insight/config.yaml"
+      }
+    }
+  }
+}

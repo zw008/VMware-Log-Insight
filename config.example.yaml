@@ -1,0 +1,25 @@
+# VMware Log Insight (Aria Operations for Logs) Configuration
+# Copy to ~/.vmware-log-insight/config.yaml and edit
+
+targets:
+  prod:
+    host: loginsight.example.com
+    username: admin
+    port: 9543            # public API port (default 9543)
+    verify_ssl: true
+    provider: Local       # Local | ActiveDirectory | <vIDM provider name>
+  lab:
+    host: 10.0.0.50
+    username: admin
+    port: 9543
+    verify_ssl: false
+    provider: Local
+
+default_target: prod
+
+# Passwords are loaded from environment variables (never stored here):
+#   VMWARE_LOG_INSIGHT_PROD_PASSWORD=xxx
+#   VMWARE_LOG_INSIGHT_LAB_PASSWORD=xxx
+# Or from ~/.vmware-log-insight/.env (chmod 600). Plaintext passwords there are
+# auto-rewritten to a grep-safe b64: form on first load (obfuscation, NOT
+# encryption). For real at-rest secrecy, inject from a secret manager instead.

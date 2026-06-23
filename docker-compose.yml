@@ -1,0 +1,8 @@
+services:
+  vmware-log-insight-mcp:
+    build: .
+    volumes:
+      - ~/.vmware-log-insight:/root/.vmware-log-insight:ro
+    environment:
+      - VMWARE_LOG_INSIGHT_CONFIG=/root/.vmware-log-insight/config.yaml
+    stdin_open: true
