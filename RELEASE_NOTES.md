@@ -1,4 +1,4 @@
-## Unreleased — initial release
+## v1.6.1 (2026-06-24) — initial release
 
 First release of **vmware-log-insight**: read-only log search and aggregation for
 VMware Aria Operations for Logs (vRealize Log Insight). The centralized-log data
