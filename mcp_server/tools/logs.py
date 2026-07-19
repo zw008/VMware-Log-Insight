@@ -90,12 +90,15 @@ def log_aggregate(
 
 @mcp.tool(annotations=_READ)
 @vmware_tool(risk_level="low")
-def log_fields(name_filter: Optional[str] = None, target: Optional[str] = None) -> list[dict]:
+def log_fields(name_filter: Optional[str] = None, target: Optional[str] = None) -> dict:
     """[READ] List the extracted fields available to use in query filters.
 
     Use this to discover valid field names before filtering log_search /
     log_aggregate. name_filter = optional case-insensitive substring. target =
-    target name from config. Returns [{name}]. Read-only."""
+    target name from config. Returns the family list envelope {items, returned,
+    limit, total, truncated, hint}; each item is {name}. There is no limit —
+    every matching field is returned, so truncated is always false and this is
+    the complete field list, not a page of it. Read-only."""
     from mcp_server import server
 
     try:
@@ -103,7 +106,7 @@ def log_fields(name_filter: Optional[str] = None, target: Optional[str] = None) 
 
         return list_fields(server._get_connection(target), name_filter=name_filter)
     except Exception as e:
-        return [{"error": server._safe_error(e, "log_fields"), "hint": "Run 'vmware-log-insight doctor'."}]
+        return {"error": server._safe_error(e, "log_fields"), "hint": "Run 'vmware-log-insight doctor'."}
 
 
 @mcp.tool(annotations=_READ)

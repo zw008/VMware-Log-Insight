@@ -11,15 +11,17 @@ Read-only log search and aggregation for **VMware Aria Operations for Logs**
 hosts, vCenter, and VMs. The centralized-log data source for the VMware skill
 family. **Strictly non-destructive**: it queries, it never writes.
 
+- **Read-only by design — and provable** (v1.8.0): all 7 MCP tools are read, none write; set `VMWARE_READ_ONLY=true` (or the per-skill `VMWARE_LOG_INSIGHT_READ_ONLY`, or `read_only: true` in config) and the family read-only gate verifies that at startup instead of taking the docs' word for it. See [Read-Only Mode](#read-only-mode).
+
 ## Companion Skills
 
-| Need | Skill |
-|---|---|
-| Raw centralized logs + spikes | **vmware-log-insight** (this) |
-| vCenter events & alarms | [vmware-monitor](https://github.com/zw008/VMware-Monitor) |
-| Metrics, anomalies, capacity | [vmware-aria](https://github.com/zw008/VMware-Aria) |
-| Incident correlation / root cause | [vmware-debug](https://github.com/zw008/VMware-Debug) — feed it `log_search` output |
-| VM lifecycle / operations | [vmware-aiops](https://github.com/zw008/VMware-AIops) |
+| Need | Skill | Tools |
+|---|---|:-:|
+| Raw centralized logs + spikes | **vmware-log-insight** (this) | 7 |
+| vCenter events & alarms | [vmware-monitor](https://github.com/zw008/VMware-Monitor) | 27 |
+| Metrics, anomalies, capacity | [vmware-aria](https://github.com/zw008/VMware-Aria) | 28 |
+| Incident correlation / root cause | [vmware-debug](https://github.com/zw008/VMware-Debug) — feed it `log_search` output | 2 |
+| VM lifecycle / operations | [vmware-aiops](https://github.com/zw008/VMware-AIops) | 49 |
 
 ## Install
 
@@ -41,6 +43,38 @@ vmware-log-insight doctor
 | `log_fields` | List extracted fields usable in filters |
 | `log_version` | Appliance version/build |
 | `alert_list` / `alert_get` / `alert_history` | Query defined alerts and their trigger history |
+
+## Read-Only Mode
+
+vmware-log-insight is read-only by design — all 7 MCP tools carry the `[READ]` marker and
+there are no write tools to withhold. Since v1.8.0 that is **provable rather than merely
+documented**: set `VMWARE_READ_ONLY=true` and the family read-only gate enumerates the
+registry at startup and verifies that zero write tools are exposed — structural, not a
+prompt instruction a model can ignore. **Off by default.** Fail-closed: if the mode is
+requested but cannot be guaranteed, the server refuses to start rather than running open.
+
+The same variable is family-wide: one env var also strips every write tool from the
+write-capable siblings (aiops, storage, vks, nsx, ...), so a whole-estate audit posture is
+a single setting.
+
+```json
+{
+  "mcpServers": {
+    "vmware-log-insight": {
+      "command": "vmware-log-insight",
+      "args": ["mcp"],
+      "env": { "VMWARE_READ_ONLY": "true" }
+    }
+  }
+}
+```
+
+- Per-skill override: `VMWARE_LOG_INSIGHT_READ_ONLY=true` (takes precedence over the family-wide `VMWARE_READ_ONLY`)
+- Config alternative: `read_only: true` in `~/.vmware-log-insight/config.yaml`
+
+Precedence: per-skill env → family env → config → off. Nothing is logged as withheld
+because nothing is — the gate's empty result *is* the assertion (write-capable siblings log
+`Read-only mode active ... withheld N write tool(s)` instead).
 
 ## Workflows
 

@@ -19,7 +19,7 @@ installer:
   package: vmware-log-insight
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_LOG_INSIGHT_CONFIG"],"bins":["vmware-log-insight"],"config":["~/.vmware-log-insight/config.yaml"]},"primaryEnv":"VMWARE_LOG_INSIGHT_CONFIG"}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_LOG_INSIGHT_CONFIG"],"bins":["vmware-log-insight"],"config":["~/.vmware-log-insight/config.yaml","~/.vmware-log-insight/.env"]},"optional":{"env":["VMWARE_LOG_INSIGHT_<TARGET>_PASSWORD","VMWARE_READ_ONLY","VMWARE_LOG_INSIGHT_READ_ONLY","VMWARE_AUDIT_APPROVED_BY"]},"primaryEnv":"VMWARE_LOG_INSIGHT_CONFIG"}}
 ---
 
 # VMware Log Insight
@@ -103,6 +103,13 @@ alarms (monitor) or metric anomalies (aria). This skill only reads the log store
 | Logs | `log_search` (time window + text + filters), `log_aggregate` (COUNT/etc + spike detection), `log_fields`, `log_version` |
 | Alerts | `alert_list`, `alert_get`, `alert_history` |
 
+**List envelope**: `log_fields`, `alert_list` and `alert_history` return
+`{items, returned, limit, total, truncated, hint}` rather than a bare list — read
+the rows from `items`, and treat `truncated: true` as "there is more, raise
+`limit` or narrow the filter". `total` is a real count (the appliance returns each
+collection in one GET and `limit` is applied client-side), so a page that exactly
+fills `limit` is still reported `truncated: false` when it is genuinely complete.
+
 **Query model**: time windows use a relative `last` ("1h", "30m", "7d") or an
 absolute `begin_ms`/`end_ms` (epoch ms); `text` is a CONTAINS search. See
 `references/cli-reference.md` for the full constraint grammar.
@@ -131,7 +138,10 @@ vmware-log-insight mcp                                  # start MCP server (prox
 
 Read-only by construction (no write tools). MCP tools run through
 `@vmware_tool(risk_level="low")`, which records each call to the shared audit DB
-(`~/.vmware/audit.db`). Credentials load from `~/.vmware-log-insight/.env`
+(`~/.vmware/audit.db`). Targets may declare `environment:` (`production` /
+`staging` / `lab`) in `config.yaml` to scope policy rules; reads are never gated
+by it, so this skill is unaffected either way, but declaring it keeps any future
+write tool correctly scoped. Credentials load from `~/.vmware-log-insight/.env`
 (`chmod 600`); plaintext passwords there are auto-rewritten to a grep-safe
 `b64:` form on first load (obfuscation, not encryption — inject from a secret
 manager for real at-rest secrecy). All API text passes through `sanitize()`

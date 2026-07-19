@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from vmware_policy import sanitize
+from vmware_policy import paginated, sanitize
 
 if TYPE_CHECKING:
     from vmware_log_insight.connection import LogInsightClient
@@ -30,7 +30,7 @@ def list_alerts(
     client: LogInsightClient,
     name_filter: str | None = None,
     limit: int = _DEFAULT_LIMIT,
-) -> list[dict]:
+) -> dict:
     """List defined alerts.
 
     Args:
@@ -39,20 +39,22 @@ def list_alerts(
         limit: Max alerts to return. Default 50.
 
     Returns:
-        List of {id, name, enabled, info}. Pass an id to get_alert for details.
+        The family list envelope; `items` is a list of {id, name, enabled, info}
+        — pass an id to get_alert for details. `total` is the real count of
+        alerts matching `name_filter`: the API returns the whole collection in
+        one GET and the filter runs here, so counting the matches costs nothing
+        beyond the request already made.
     """
     data = client.get("/alerts")
     items = data.get("alerts", []) or []
     filt = name_filter.lower() if name_filter else None
-    out: list[dict] = []
+    matched: list[dict] = []
     for a in items:
         summary = _summarize_alert(a)
         if filt and filt not in summary["name"].lower():
             continue
-        out.append(summary)
-        if len(out) >= limit:
-            break
-    return out
+        matched.append(summary)
+    return paginated(matched[:limit], limit=limit, total=len(matched))
 
 
 def get_alert(client: LogInsightClient, alert_id: str) -> dict:
@@ -75,7 +77,7 @@ def get_alert(client: LogInsightClient, alert_id: str) -> dict:
 
 def get_alert_history(
     client: LogInsightClient, alert_id: str, limit: int = _DEFAULT_LIMIT
-) -> list[dict]:
+) -> dict:
     """List recent trigger-history records for an alert.
 
     Args:
@@ -84,7 +86,11 @@ def get_alert_history(
         limit: Max history records to return. Default 50.
 
     Returns:
-        List of {timestamp_ms, info} records, most recent first as returned.
+        The family list envelope; `items` is a list of {timestamp_ms, info}
+        records, most recent first as returned. The API hands back the whole
+        history in one GET and `limit` slices it here, so `total` is the real
+        record count at no extra cost — a page that exactly fills `limit` is
+        still reported complete when it genuinely is.
     """
     if not alert_id:
         raise ValueError("alert_id must not be empty")
@@ -98,4 +104,4 @@ def get_alert_history(
                 "info": sanitize(str(r.get("info", r.get("message", ""))), 500),
             }
         )
-    return out
+    return paginated(out, limit=limit, total=len(records))

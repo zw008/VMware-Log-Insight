@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from vmware_policy import sanitize
+from vmware_policy import paginated, sanitize
 
 if TYPE_CHECKING:
     from vmware_log_insight.connection import LogInsightClient
 
 
-def list_fields(client: LogInsightClient, name_filter: str | None = None) -> list[dict]:
+def list_fields(client: LogInsightClient, name_filter: str | None = None) -> dict:
     """List the extracted fields available for use in query constraints.
 
     Args:
@@ -18,7 +18,9 @@ def list_fields(client: LogInsightClient, name_filter: str | None = None) -> lis
         name_filter: Optional case-insensitive substring filter on field name.
 
     Returns:
-        List of {name} dicts. Use these names in search/aggregate ``filters``.
+        The family list envelope; `items` is a list of {name} dicts — use these
+        names in search/aggregate ``filters``. There is no limit: every matching
+        field is returned, so `total` is real and `truncated` is always False.
     """
     data = client.get("/fields")
     items = data.get("fields", data.get("fieldName", [])) or []
@@ -29,7 +31,7 @@ def list_fields(client: LogInsightClient, name_filter: str | None = None) -> lis
         if filt and filt not in name.lower():
             continue
         out.append({"name": name})
-    return out
+    return paginated(out, total=len(out))
 
 
 def get_version(client: LogInsightClient) -> dict:

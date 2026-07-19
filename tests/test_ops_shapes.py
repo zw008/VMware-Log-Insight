@@ -80,18 +80,18 @@ def test_detect_spikes_needs_baseline():
 def test_list_fields_filters():
     client = FakeClient({"fields": [{"name": "hostname"}, {"name": "appname"}]})
     out = list_fields(client, name_filter="host")
-    assert out == [{"name": "hostname"}]
+    assert out["items"] == [{"name": "hostname"}]
 
 
 def test_list_alerts_summary_and_limit():
     client = FakeClient(
         {"alerts": [{"id": "a1", "name": "Disk full", "enabled": True, "info": "x"}]}
     )
-    out = list_alerts(client, limit=5)
+    out = list_alerts(client, limit=5)["items"]
     assert out[0]["id"] == "a1" and out[0]["enabled"] is True
 
 
 def test_alert_history_variant_keys():
     client = FakeClient({"records": [{"time": 5, "message": "fired"}]})
     out = get_alert_history(client, "a1")
-    assert out == [{"timestamp_ms": 5, "info": "fired"}]
+    assert out["items"] == [{"timestamp_ms": 5, "info": "fired"}]

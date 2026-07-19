@@ -9,14 +9,17 @@
 VM syslog 的日志平台）的**只读**日志检索与聚合。VMware skill 家族的集中日志数据源。
 **严格无破坏性**：只查询，从不写入。
 
+- **设计上只读，且可证明**（v1.8.0）—— 全部 7 个 MCP 工具均为只读、零写工具；设置 `VMWARE_READ_ONLY=true`（或按 skill 的 `VMWARE_LOG_INSIGHT_READ_ONLY`，或配置文件里的 `read_only: true`），家族只读闸门会在启动时验证这一点，而不是让你相信文档，详见[只读模式](#只读模式)
+
 ## 配套 Skill
 
-| 需求 | Skill |
-|---|---|
-| 原始集中日志 + 突刺 | **vmware-log-insight**（本项目） |
-| vCenter 事件与告警 | vmware-monitor |
-| 指标 / 异常 / 容量 | vmware-aria |
-| 故障关联 / 根因 | vmware-debug（把 `log_search` 结果喂给它） |
+| 需求 | Skill | 工具数 |
+|---|---|:-:|
+| 原始集中日志 + 突刺 | **vmware-log-insight**（本项目） | 7 |
+| vCenter 事件与告警 | [vmware-monitor](https://github.com/zw008/VMware-Monitor) | 27 |
+| 指标 / 异常 / 容量 | [vmware-aria](https://github.com/zw008/VMware-Aria) | 28 |
+| 故障关联 / 根因 | [vmware-debug](https://github.com/zw008/VMware-Debug)（把 `log_search` 结果喂给它） | 2 |
+| VM 生命周期 / 运维 | [vmware-aiops](https://github.com/zw008/VMware-AIops) | 49 |
 
 ## 安装
 
@@ -33,6 +36,35 @@ vmware-log-insight doctor
 
 `log_search`（按时间窗 + 文本 + 字段过滤检索）、`log_aggregate`（按时间桶聚合 + z-score
 突刺检测）、`log_fields`、`log_version`、`alert_list` / `alert_get` / `alert_history`。
+
+## 只读模式
+
+vmware-log-insight 在设计上就是只读的——全部 7 个 MCP 工具均带 `[READ]` 标记，没有任何写工具需要移除。
+自 v1.8.0 起，这一点**从"文档承诺"变成"可证明"**：设置 `VMWARE_READ_ONLY=true`，家族只读闸门会在启动时
+枚举工具注册表并验证暴露的写工具数为零——这是结构性保证，而非模型可以无视的提示词约束。
+**默认关闭。** 且为 fail-closed 设计：请求了只读模式但无法保证时，服务器直接拒绝启动，而不是放开运行。
+
+该变量是家族级的：同一个环境变量也会从有写能力的兄弟 skill（aiops、storage、vks、nsx……）中移除全部写工具，
+因此"全环境审计态势"只需一处设置。
+
+```json
+{
+  "mcpServers": {
+    "vmware-log-insight": {
+      "command": "vmware-log-insight",
+      "args": ["mcp"],
+      "env": { "VMWARE_READ_ONLY": "true" }
+    }
+  }
+}
+```
+
+- 按 skill 覆盖：`VMWARE_LOG_INSIGHT_READ_ONLY=true`（优先于家族级 `VMWARE_READ_ONLY`）
+- 配置文件方式：在 `~/.vmware-log-insight/config.yaml` 中设置 `read_only: true`
+
+优先级：按 skill 环境变量 → 家族环境变量 → 配置文件 → 默认关闭。启动日志不会列出被移除的工具，
+因为本来就没有——闸门返回空结果本身即是断言（有写能力的兄弟 skill 则会记录
+`Read-only mode active ... withheld N write tool(s)`）。
 
 ## 常用工作流
 

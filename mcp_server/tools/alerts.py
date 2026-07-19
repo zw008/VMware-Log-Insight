@@ -13,13 +13,16 @@ _READ = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True,
 @vmware_tool(risk_level="low")
 def alert_list(
     name_filter: Optional[str] = None, limit: int = 50, target: Optional[str] = None
-) -> list[dict]:
+) -> dict:
     """[READ] List defined Log Insight alerts.
 
     name_filter = optional case-insensitive substring on alert name. limit = max
-    results (default 50). target = target name from config. Returns [{id, name,
-    enabled, info}]; pass an id to alert_get. Read-only — this skill never
-    creates/edits/deletes alerts."""
+    results (default 50). target = target name from config. Returns the family
+    list envelope {items, returned, limit, total, truncated, hint}; each item is
+    {id, name, enabled, info} — pass an id to alert_get. total is the real count
+    of alerts matching name_filter, so truncated definitively answers whether
+    more exist; raise limit or narrow name_filter when it is true. Read-only —
+    this skill never creates/edits/deletes alerts."""
     from mcp_server import server
 
     try:
@@ -27,7 +30,7 @@ def alert_list(
 
         return list_alerts(server._get_connection(target), name_filter=name_filter, limit=limit)
     except Exception as e:
-        return [{"error": server._safe_error(e, "alert_list"), "hint": "Run 'vmware-log-insight doctor'."}]
+        return {"error": server._safe_error(e, "alert_list"), "hint": "Run 'vmware-log-insight doctor'."}
 
 
 @mcp.tool(annotations=_READ)
@@ -47,11 +50,15 @@ def alert_get(alert_id: str, target: Optional[str] = None) -> dict:
 
 @mcp.tool(annotations=_READ)
 @vmware_tool(risk_level="low")
-def alert_history(alert_id: str, limit: int = 50, target: Optional[str] = None) -> list[dict]:
+def alert_history(alert_id: str, limit: int = 50, target: Optional[str] = None) -> dict:
     """[READ] List recent trigger-history records for an alert.
 
     alert_id = the alert id (from alert_list). limit = max records (default 50).
-    target = target name from config. Returns [{timestamp_ms, info}]. Read-only."""
+    target = target name from config. Returns the family list envelope {items,
+    returned, limit, total, truncated, hint}; each item is {timestamp_ms, info}.
+    total is the alert's real history-record count, so truncated definitively
+    answers whether older records were left behind — raise limit when it is
+    true. Read-only."""
     from mcp_server import server
 
     try:
@@ -59,4 +66,4 @@ def alert_history(alert_id: str, limit: int = 50, target: Optional[str] = None) 
 
         return get_alert_history(server._get_connection(target), alert_id, limit=limit)
     except Exception as e:
-        return [{"error": server._safe_error(e, "alert_history"), "hint": "Run 'vmware-log-insight doctor'."}]
+        return {"error": server._safe_error(e, "alert_history"), "hint": "Run 'vmware-log-insight doctor'."}

@@ -152,7 +152,7 @@ def fields(
     from vmware_log_insight.ops.fields import list_fields
 
     client, _ = _get_connection(target, config)
-    items = list_fields(client, name_filter=name)
+    items = list_fields(client, name_filter=name)["items"]
     table = Table(title=f"Fields ({len(items)})")
     table.add_column("Name", style="bold")
     for f in items:
@@ -172,8 +172,12 @@ def alert_list_cmd(
     from vmware_log_insight.ops.alerts import list_alerts
 
     client, _ = _get_connection(target, config)
-    items = list_alerts(client, name_filter=name, limit=limit)
-    table = Table(title=f"Alerts ({len(items)})")
+    result = list_alerts(client, name_filter=name, limit=limit)
+    items = result["items"]
+    # The envelope knows the real total, so say when rows were left behind
+    # rather than showing a count that reads like the whole set.
+    shown = f"{len(items)} of {result['total']}" if result["truncated"] else str(len(items))
+    table = Table(title=f"Alerts ({shown})")
     table.add_column("ID")
     table.add_column("Name", style="bold")
     table.add_column("Enabled")

@@ -20,8 +20,22 @@ targets:
     port: 9543            # public API port (default 9543)
     verify_ssl: true
     provider: Local       # Local | ActiveDirectory | <vIDM provider name>
+    environment: production   # production | staging | lab — see below
 default_target: prod
 ```
+
+### `environment` — declaring what a target is
+
+Policy rules scope by environment ("irreversible work in production needs a
+second person"). A target that declares no `environment` is treated as unknown
+rather than safe: state-changing operations against it currently run but log a
+warning, and **the next major release will refuse them**.
+
+Every tool this skill ships is read-only, and reads are never gated under
+either setting — so declaring it changes nothing for Log Insight today. Set it
+anyway: it is shared policy configuration across the VMware skill family, and
+it is what keeps any future write tool correctly scoped. Run `vmware-audit
+policy` to see the rules in force.
 
 ## Credentials
 
