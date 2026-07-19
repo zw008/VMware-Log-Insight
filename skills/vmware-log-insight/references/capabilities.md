@@ -13,6 +13,12 @@ base `https://<host>:9543/api/v2`, session auth (Bearer). All tools read-only.
 | `alert_get` | GET /alerts/{id} | `{id, name, enabled, info, raw_keys}` | 100–400 |
 | `alert_history` | GET /alerts/{id}/history | envelope of `[{timestamp_ms, info}]` | 100–1500 |
 
+> Read-only mode (`VMWARE_LOG_INSIGHT_READ_ONLY=true`, the family-wide `VMWARE_READ_ONLY=true`,
+> or `read_only: true` in `config.yaml`) removes nothing from this table — all 7 tools are
+> `[READ]`, and the gate proves that at start-up rather than trusting the marker.
+> Classification comes from the `[READ]`/`[WRITE]` docstring marker — see README.
+> `vmware-log-insight doctor` reports the resolved state and its source.
+
 ## List envelope
 
 `log_fields`, `alert_list` and `alert_history` return the family list envelope

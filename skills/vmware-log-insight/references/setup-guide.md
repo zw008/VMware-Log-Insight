@@ -78,7 +78,8 @@ vmware-log-insight doctor
 ```
 
 Checks: config file, `.env` permissions, config parse, password env vars, network
-reachability (TCP 9543), authentication, appliance version, and MCP server import.
+reachability (TCP 9543), authentication, appliance version, MCP server import, and the
+resolved read-only state (see below).
 
 ## MCP client configuration
 
@@ -92,6 +93,52 @@ reachability (TCP 9543), authentication, appliance version, and MCP server impor
 
 If you installed with `uv tool install`, prefer the entry point `vmware-log-insight mcp`
 (no PyPI resolution at startup — robust behind corporate TLS proxies, 踩坑 #25).
+
+## Read-Only Mode
+
+Off by default. All 7 tools of this skill are reads, so turning it on withholds nothing
+here — the value is that the gate *verifies* at start-up that no write tool is exposed,
+instead of trusting the docs, and that one family variable locks down every other installed
+skill at the same time.
+
+Three ways to set it, highest priority first:
+
+| Priority | Signal | Scope |
+|---|---|---|
+| 1 | `VMWARE_LOG_INSIGHT_READ_ONLY` env var | This skill only |
+| 2 | `VMWARE_READ_ONLY` env var | Every installed VMware skill |
+| 3 | `read_only: true` in `config.yaml` | This skill only |
+| 4 | (nothing set) | Off |
+
+The env vars come first so a deployment can be locked down from the MCP client's `env`
+block without editing any config file:
+
+```json
+{
+  "mcpServers": {
+    "vmware-log-insight": {
+      "command": "vmware-log-insight",
+      "args": ["mcp"],
+      "env": {
+        "VMWARE_LOG_INSIGHT_CONFIG": "~/.vmware-log-insight/config.yaml",
+        "VMWARE_READ_ONLY": "true"
+      }
+    }
+  }
+}
+```
+
+**Fail-closed.** If the mode is requested but cannot be *proven*, the server refuses to
+start with `ReadOnlyGateError`: the FastMCP tool registry cannot be enumerated (usually an
+incompatible `mcp` version), or a removal did not take effect. One case does *not* abort —
+an unparseable value (`VMWARE_READ_ONLY=ture`) resolves to **on** with a warning naming the
+accepted values, so a typo locks the deployment down rather than leaving it open.
+
+**Verifying.** `vmware-log-insight doctor` has a `Read-only mode` row reporting the
+resolved state and which switch produced it (`VMWARE_READ_ONLY`, `config`, `default`, …).
+It never fails the run — read-only being on is a posture, not a fault — and it calls the
+same resolver the gate does, so the two cannot disagree. The MCP server additionally logs
+every withheld tool at start-up.
 
 ## Security
 
