@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vmware-log-insight"
-version = "1.8.1"
+version = "1.8.2"
 description = "VMware Aria Operations for Logs (vRealize Log Insight) read-only log search, aggregation, and alert queries — MCP + CLI"
 readme = "README.md"
 license = "MIT"
@@ -30,10 +30,10 @@ dependencies = [
 
 [project.scripts]
 vmware-log-insight = "vmware_log_insight.cli:app"
-vmware-log-insight-mcp = "mcp_server.server:main"
+vmware-log-insight-mcp = "vmware_log_insight.mcp_server.server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["vmware_log_insight", "mcp_server"]
+packages = ["vmware_log_insight"]
 
 [dependency-groups]
 dev = [

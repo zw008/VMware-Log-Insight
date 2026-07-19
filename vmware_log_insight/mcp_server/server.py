@@ -2,15 +2,16 @@
 
 Thin entrypoint: importing the tool modules runs their ``@mcp.tool`` decorators
 (registering the 7 read tools on the shared ``mcp`` instance), re-exports the
-shared plumbing and every tool function so ``from mcp_server.server import mcp,
+shared plumbing and every tool function so ``from vmware_log_insight.mcp_server.server
+import mcp,
 <fn>`` keeps resolving (踩坑 #17), and exposes ``main()``.
 
 Tool categories
 ---------------
 * **Logs** (4, read-only): log_search, log_aggregate, log_fields, log_version
-  — ``mcp_server/tools/logs.py``
+  — ``vmware_log_insight/mcp_server/tools/logs.py``
 * **Alerts** (3, read-only): alert_list, alert_get, alert_history
-  — ``mcp_server/tools/alerts.py``
+  — ``vmware_log_insight/mcp_server/tools/alerts.py``
 
 Security: stdio transport (local only, no listener); credentials come from
 env/.env, never MCP messages; all API text passes through sanitize().
@@ -25,9 +26,10 @@ from vmware_policy import apply_read_only_gate, mtime_cached_loader, set_environ
 
 from vmware_log_insight.config import CONFIG_FILE, load_config
 
-# Shared plumbing — re-exported so `from mcp_server.server import _safe_error,
+# Shared plumbing — re-exported so `from vmware_log_insight.mcp_server.server import
+# _safe_error,
 # mcp, _get_connection` (and monkeypatch targets) keep resolving.
-from mcp_server._shared import (  # noqa: F401
+from vmware_log_insight.mcp_server._shared import (  # noqa: F401
     _get_connection,
     _safe_error,
     logger,
@@ -35,19 +37,19 @@ from mcp_server._shared import (  # noqa: F401
 )
 
 # Importing the tool modules runs their @mcp.tool decorators (registration).
-from mcp_server.tools import (  # noqa: F401
+from vmware_log_insight.mcp_server.tools import (  # noqa: F401
     alerts,
     logs,
 )
 
-# Re-export every tool function so `mcp_server.server.<tool>` resolves (tests
+# Re-export every tool function so `vmware_log_insight.mcp_server.server.<tool>` resolves (tests
 # call e.g. `server.log_search(...)` and patch `server._get_connection`).
-from mcp_server.tools.alerts import (  # noqa: F401
+from vmware_log_insight.mcp_server.tools.alerts import (  # noqa: F401
     alert_get,
     alert_history,
     alert_list,
 )
-from mcp_server.tools.logs import (  # noqa: F401
+from vmware_log_insight.mcp_server.tools.logs import (  # noqa: F401
     log_aggregate,
     log_fields,
     log_search,
@@ -133,13 +135,18 @@ __all__ = [
 def main() -> None:
     """Start the MCP server using stdio transport.
 
-    Guards Python < 3.11: FastMCP schema reflection over tool signatures is
-    unreliable on 3.10 with older mcp/pydantic (踩坑 #33).
+    Guards Python < 3.10, the floor declared in `requires-python`.
     """
-    if sys.version_info < (3, 11):
+    # Floor is 3.10, matching `requires-python` and the other eleven skills.
+    # This guard used to demand 3.11 on the grounds that FastMCP schema
+    # reflection was unreliable on 3.10 (踩坑 #33). That was the symptom; the
+    # cause was PEP 604 `X | None` in the server's own signatures, fixed by
+    # converting them to `Optional[X]`. 3.10 was then verified end to end on
+    # 2026-07-19 — every tool's schema built, zero failures, pydantic 2.13.4.
+    if sys.version_info < (3, 10):
         sys.exit(
-            "vmware-log-insight MCP server requires Python >= 3.11. Reinstall: "
-            "uv tool install --python 3.11 --force vmware-log-insight"
+            "vmware-log-insight MCP server requires Python >= 3.10. Reinstall: "
+            "uv tool install --python 3.12 --force vmware-log-insight"
         )
     logging.basicConfig(
         level=logging.WARNING,

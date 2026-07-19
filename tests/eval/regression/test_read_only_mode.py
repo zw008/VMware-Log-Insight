@@ -35,15 +35,15 @@ EXPECTED_TOOLS = {
 
 
 def _load_server(monkeypatch, read_only):
-    """Import mcp_server.server fresh under the given read-only env."""
+    """Import vmware_log_insight.mcp_server.server fresh under the given read-only env."""
     monkeypatch.delenv("VMWARE_READ_ONLY", raising=False)
     monkeypatch.delenv("VMWARE_LOG_INSIGHT_READ_ONLY", raising=False)
     if read_only is not None:
         monkeypatch.setenv("VMWARE_READ_ONLY", read_only)
 
-    for name in [m for m in sys.modules if m.startswith("mcp_server")]:
+    for name in [m for m in sys.modules if m.startswith("vmware_log_insight.mcp_server")]:
         del sys.modules[name]
-    return importlib.import_module("mcp_server.server")
+    return importlib.import_module("vmware_log_insight.mcp_server.server")
 
 
 def _tools(server):
@@ -71,12 +71,12 @@ def _restore_modules():
     """Put back the exact module objects other test files already hold.
 
     Deleting them is not enough: the tool modules bind helpers from
-    ``mcp_server._shared`` at import time, and sibling tests monkeypatch those
+    ``vmware_log_insight.mcp_server._shared`` at import time, and sibling tests monkeypatch those
     on the module objects they imported at collection time.
     """
-    saved = {n: m for n, m in sys.modules.items() if n.startswith("mcp_server")}
+    saved = {n: m for n, m in sys.modules.items() if n.startswith("vmware_log_insight.mcp_server")}
     yield
-    for name in [m for m in sys.modules if m.startswith("mcp_server")]:
+    for name in [m for m in sys.modules if m.startswith("vmware_log_insight.mcp_server")]:
         del sys.modules[name]
     sys.modules.update(saved)
 
@@ -108,9 +108,9 @@ def test_read_only_keeps_every_tool(monkeypatch):
 def test_skill_env_var_also_withholds_nothing(monkeypatch):
     monkeypatch.delenv("VMWARE_READ_ONLY", raising=False)
     monkeypatch.setenv("VMWARE_LOG_INSIGHT_READ_ONLY", "true")
-    for name in [m for m in sys.modules if m.startswith("mcp_server")]:
+    for name in [m for m in sys.modules if m.startswith("vmware_log_insight.mcp_server")]:
         del sys.modules[name]
-    server = importlib.import_module("mcp_server.server")
+    server = importlib.import_module("vmware_log_insight.mcp_server.server")
     assert server.WITHHELD_WRITE_TOOLS == []
     assert _tool_names(server) == EXPECTED_TOOLS
 

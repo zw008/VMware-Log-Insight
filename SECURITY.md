@@ -44,7 +44,7 @@ C0/C1 control-character stripping) before reaching the agent.
 ## Static Analysis
 
 ```bash
-uvx bandit -r vmware_log_insight/ mcp_server/
+uvx bandit -r vmware_log_insight/
 ```
 
 Release bar: 0 Medium-or-higher severity findings.

@@ -4,7 +4,7 @@ from typing import Optional
 
 from vmware_policy import vmware_tool
 
-from mcp_server._shared import mcp
+from vmware_log_insight.mcp_server._shared import mcp
 
 _READ = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True}
 
@@ -23,7 +23,7 @@ def alert_list(
     of alerts matching name_filter, so truncated definitively answers whether
     more exist; raise limit or narrow name_filter when it is true. Read-only —
     this skill never creates/edits/deletes alerts."""
-    from mcp_server import server
+    from vmware_log_insight.mcp_server import server
 
     try:
         from vmware_log_insight.ops.alerts import list_alerts
@@ -38,7 +38,7 @@ def alert_list(
 def alert_get(alert_id: str, target: Optional[str] = None) -> dict:
     """[READ] Get full details for one alert by id (from alert_list). target =
     target name from config. Returns the alert's sanitized detail. Read-only."""
-    from mcp_server import server
+    from vmware_log_insight.mcp_server import server
 
     try:
         from vmware_log_insight.ops.alerts import get_alert
@@ -59,7 +59,7 @@ def alert_history(alert_id: str, limit: int = 50, target: Optional[str] = None) 
     total is the alert's real history-record count, so truncated definitively
     answers whether older records were left behind — raise limit when it is
     true. Read-only."""
-    from mcp_server import server
+    from vmware_log_insight.mcp_server import server
 
     try:
         from vmware_log_insight.ops.alerts import get_alert_history

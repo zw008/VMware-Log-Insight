@@ -17,7 +17,7 @@ console = Console()
 def _config_read_only() -> bool | None:
     """Best-effort read of ``read_only`` from the config file.
 
-    Mirrors the ``config_flag`` that ``mcp_server.server`` hands
+    Mirrors the ``config_flag`` that ``vmware_log_insight.mcp_server.server`` hands
     :func:`vmware_policy.readonly.apply_read_only_gate`. It must stay identical:
     a doctor that resolves the flag differently from the gate reports a state the
     server does not have. Deliberately uses the default config path, because that
@@ -141,9 +141,9 @@ def run_doctor(config_path: Path | None = None, skip_auth: bool = False) -> bool
 
     # 8. MCP server import
     try:
-        import mcp_server.server  # noqa: F401
+        import vmware_log_insight.mcp_server.server  # noqa: F401
 
-        checks.append(("MCP server import", True, "mcp_server.server importable"))
+        checks.append(("MCP server import", True, "vmware_log_insight.mcp_server.server importable"))
     except Exception as e:
         checks.append(("MCP server import", False, str(e)))
 

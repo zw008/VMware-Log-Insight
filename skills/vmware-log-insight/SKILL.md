@@ -123,7 +123,7 @@ zero write tools are exposed rather than taking this document's word for it. The
 family variable withholds write tools across every companion skill, so a whole-estate audit
 posture is one setting: if a companion's write tool is absent from *its* `list_tools()`,
 that is the lockdown, not a fault — report the blocked operation instead of retrying.
-`vmware-log-insight doctor` reports the resolved state and which switch set it.
+`vmware-log-insight doctor` reports the resolved state and which switch set it. Running with local or small models? See [`references/agent-guardrails.md`](references/agent-guardrails.md).
 
 ## CLI Quick Reference
 

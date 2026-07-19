@@ -1,6 +1,7 @@
 """LOG tools (4, read-only): log_search, log_aggregate, log_fields, log_version.
 
-Each resolves the connection/error helpers through ``mcp_server.server`` at call
+Each resolves the connection/error helpers through ``vmware_log_insight.mcp_server.server``
+at call
 time, so patching ``server._get_connection`` governs every tool.
 """
 
@@ -8,7 +9,7 @@ from typing import Optional
 
 from vmware_policy import vmware_tool
 
-from mcp_server._shared import mcp
+from vmware_log_insight.mcp_server._shared import mcp
 
 _READ = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True}
 
@@ -38,7 +39,7 @@ def log_search(
     RETURNS: {count, complete (False if truncated), constraints (the query used),
     events: [{timestamp_ms, text, fields}]}. Feed events to vmware-debug
     incident_timeline to correlate with other sources. Read-only."""
-    from mcp_server import server
+    from vmware_log_insight.mcp_server import server
 
     try:
         from vmware_log_insight.ops.search import search_events
@@ -74,7 +75,7 @@ def log_aggregate(
 
     RETURNS: {aggregation, bin_width_ms, constraints, bins:[{timestamp_ms,
     value}], spikes:[{timestamp_ms, value, zscore}]}. Read-only."""
-    from mcp_server import server
+    from vmware_log_insight.mcp_server import server
 
     try:
         from vmware_log_insight.ops.aggregate import aggregate_events
@@ -99,7 +100,7 @@ def log_fields(name_filter: Optional[str] = None, target: Optional[str] = None) 
     limit, total, truncated, hint}; each item is {name}. There is no limit —
     every matching field is returned, so truncated is always false and this is
     the complete field list, not a page of it. Read-only."""
-    from mcp_server import server
+    from vmware_log_insight.mcp_server import server
 
     try:
         from vmware_log_insight.ops.fields import list_fields
@@ -114,7 +115,7 @@ def log_fields(name_filter: Optional[str] = None, target: Optional[str] = None) 
 def log_version(target: Optional[str] = None) -> dict:
     """[READ] Return the Log Insight appliance version/build (diagnostics and
     query-syntax compatibility). target = target name from config. Read-only."""
-    from mcp_server import server
+    from vmware_log_insight.mcp_server import server
 
     try:
         from vmware_log_insight.ops.fields import get_version

@@ -1,9 +1,11 @@
 """Shared MCP plumbing for the vmware-log-insight tool modules.
 
-Tool functions live in ``mcp_server/tools/*.py`` and register onto the single
+Tool functions live in ``vmware_log_insight/mcp_server/tools/*.py`` and register onto the
+single
 ``mcp`` instance defined here. This module imports nothing from the tool
 packages (tools import *from* ``_shared``, never the reverse) to avoid a circular
-import. ``mcp_server/server.py`` re-exports these so the historical import paths
+import. ``vmware_log_insight/mcp_server/server.py`` re-exports these so the historical
+import paths
 keep resolving.
 """
 

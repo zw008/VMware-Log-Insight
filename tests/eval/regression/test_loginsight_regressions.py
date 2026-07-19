@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 
-from mcp_server.server import mcp
+from vmware_log_insight.mcp_server.server import mcp
 from vmware_log_insight import config
 
 _EXPECTED_TOOLS = {

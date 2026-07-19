@@ -216,14 +216,20 @@ def mcp_cmd() -> None:
     """Start the MCP server (stdio transport). Proxy-safe — no network access."""
     import sys
 
-    if sys.version_info < (3, 11):
+    # Floor is 3.10, matching `requires-python` and the other eleven skills.
+    # This guard used to demand 3.11 on the grounds that FastMCP schema
+    # reflection was unreliable on 3.10 (踩坑 #33). That was the symptom; the
+    # cause was PEP 604 `X | None` in the server's own signatures, fixed by
+    # converting them to `Optional[X]`. 3.10 was then verified end to end on
+    # 2026-07-19 — every tool's schema built, zero failures, pydantic 2.13.4.
+    if sys.version_info < (3, 10):
         typer.echo(
-            "ERROR: vmware-log-insight MCP server requires Python >= 3.11.\n"
-            "Fix: uv tool install --python 3.11 --force vmware-log-insight",
+            "ERROR: vmware-log-insight MCP server requires Python >= 3.10.\n"
+            "Fix: uv tool install --python 3.12 --force vmware-log-insight",
             err=True,
         )
         raise typer.Exit(2)
-    from mcp_server.server import main as _mcp_main
+    from vmware_log_insight.mcp_server.server import main as _mcp_main
 
     _mcp_main()
 

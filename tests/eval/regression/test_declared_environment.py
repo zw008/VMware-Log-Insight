@@ -29,7 +29,7 @@ from unittest.mock import patch
 
 import pytest
 
-from mcp_server import server
+from vmware_log_insight.mcp_server import server
 from vmware_log_insight.config import AppConfig, TargetConfig
 from vmware_policy import vmware_tool
 from vmware_policy.decorators import PolicyDenied
@@ -54,7 +54,7 @@ def declared(request: pytest.FixtureRequest):
 
     ``request.param`` is what the target declares — "" for an unlabelled target.
     """
-    with patch("mcp_server.server._cached_config", return_value=_config(request.param)):
+    with patch("vmware_log_insight.mcp_server.server._cached_config", return_value=_config(request.param)):
         set_environment_resolver(server._environment_for)
         yield
     set_environment_resolver(None)
