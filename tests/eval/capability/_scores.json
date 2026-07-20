@@ -1,0 +1,306 @@
+{
+  "_comment": "Capability eval scores. Regenerate with: pytest -m capability. These are tracked trends, not pass/fail gates \u2014 see _scoring.py.",
+  "scores": {
+    "entity_reachability_full": {
+      "detail": {
+        "broken_chains": [],
+        "entry_points": [
+          "alert_list",
+          "log_search",
+          "log_aggregate",
+          "log_fields",
+          "log_version"
+        ],
+        "reachable_on_surface": 2,
+        "reachable_only_via_description": 0,
+        "required_entity_params": 2,
+        "required_params_classified": "2/2",
+        "tool_count": 7
+      },
+      "maximum": 2,
+      "pct": 100.0,
+      "unit": "required entity params",
+      "value": 2
+    },
+    "entity_reachability_read_only": {
+      "detail": {
+        "broken_chains": [],
+        "entry_points": [
+          "alert_list",
+          "log_search",
+          "log_aggregate",
+          "log_fields",
+          "log_version"
+        ],
+        "reachable_on_surface": 2,
+        "reachable_only_via_description": 0,
+        "required_entity_params": 2,
+        "required_params_classified": "2/2",
+        "tool_count": 7
+      },
+      "maximum": 2,
+      "pct": 100.0,
+      "unit": "required entity params",
+      "value": 2
+    },
+    "entry_point_availability": {
+      "detail": {
+        "full_entry_points": 5,
+        "read_only_entry_points": 5
+      },
+      "maximum": 7,
+      "pct": 71.4,
+      "unit": "entry points",
+      "value": 5
+    },
+    "error_actionability": {
+      "detail": {
+        "dead_end_count": 13,
+        "dead_end_errors": [
+          {
+            "message": "Log Insight session acquisition succeeded but no sessionId returned",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "connection.py:167"
+          },
+          {
+            "message": "No target specified and no default target configured",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "connection.py:316"
+          },
+          {
+            "message": "Log Insight authentication to {} failed: POST /sessions returned HTTP {}. {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "connection.py:149"
+          },
+          {
+            "message": "Log Insight {} {} returned HTTP {}. {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "connection.py:248"
+          },
+          {
+            "message": "invalid duration: {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "constraints.py:35"
+          },
+          {
+            "message": "empty duration",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "constraints.py:42"
+          },
+          {
+            "message": "unknown operator {}; valid: {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "constraints.py:62"
+          },
+          {
+            "message": "constraint field must not be empty",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "constraints.py:66"
+          },
+          {
+            "message": "invalid duration: {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "constraints.py:47"
+          },
+          {
+            "message": "invalid duration: {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "constraints.py:53"
+          },
+          {
+            "message": "unknown aggregation {}; valid: {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "aggregate.py:91"
+          },
+          {
+            "message": "alert_id must not be empty",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "alerts.py:71"
+          },
+          {
+            "message": "alert_id must not be empty",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "alerts.py:96"
+          }
+        ],
+        "per_dimension_pct": {
+          "names_artifact": 8.7,
+          "names_input": 69.6,
+          "states_remedy": 43.5
+        },
+        "raise_sites": 23
+      },
+      "maximum": 69,
+      "pct": 40.6,
+      "unit": "points",
+      "value": 28
+    },
+    "manifest_context_headroom": {
+      "detail": {
+        "heaviest_tools": {
+          "alert_history": 172,
+          "alert_list": 195,
+          "log_aggregate": 344,
+          "log_fields": 163,
+          "log_search": 362
+        },
+        "manifest_tokens": 1412,
+        "mean_tokens_per_tool": 201.7,
+        "reference_context": 16384,
+        "tool_count": 7
+      },
+      "maximum": 16384,
+      "pct": 91.4,
+      "unit": "tokens",
+      "value": 14972
+    },
+    "parameter_documentation_coverage": {
+      "detail": {
+        "undocumented_by_tool": {
+          "alert_get": [
+            "alert_id"
+          ]
+        }
+      },
+      "maximum": 24,
+      "pct": 95.8,
+      "unit": "parameters",
+      "value": 23
+    },
+    "per_tool_token_discipline": {
+      "detail": {
+        "ceiling": 350,
+        "over_ceiling": {
+          "log_search": 362
+        }
+      },
+      "maximum": 7,
+      "pct": 85.7,
+      "unit": "tools",
+      "value": 6
+    },
+    "read_only_manifest_saving": {
+      "detail": {
+        "full_manifest_tokens": 1412,
+        "full_tool_count": 7,
+        "gated_manifest_tokens": 1412,
+        "gated_tool_count": 7,
+        "withheld_tools": []
+      },
+      "maximum": 1412,
+      "pct": 0.0,
+      "unit": "tokens",
+      "value": 0
+    },
+    "read_write_marker_coverage": {
+      "detail": {
+        "unmarked": []
+      },
+      "maximum": 7,
+      "pct": 100.0,
+      "unit": "points",
+      "value": 7
+    },
+    "teaching_error_rate": {
+      "detail": {},
+      "maximum": 23,
+      "pct": 8.7,
+      "unit": "messages",
+      "value": 2
+    },
+    "tool_description_quality": {
+      "detail": {
+        "per_dimension_pct": {
+          "args": 85.7,
+          "gotcha": 100.0,
+          "marker": 100.0,
+          "next_hop": 85.7,
+          "what": 100.0,
+          "when": 42.9
+        },
+        "tools_graded": 7,
+        "weakest_tools": {
+          "alert_get": [
+            "args",
+            "when"
+          ],
+          "alert_history": [
+            "when"
+          ],
+          "alert_list": [
+            "when"
+          ],
+          "log_aggregate": [],
+          "log_fields": [],
+          "log_search": [],
+          "log_version": [
+            "next_hop",
+            "when"
+          ]
+        }
+      },
+      "maximum": 42,
+      "pct": 85.7,
+      "unit": "points",
+      "value": 36
+    },
+    "tool_failure_payload_quality": {
+      "detail": {
+        "bare_string_error_lines": [],
+        "carries_hint": 7,
+        "dict_shaped": 7,
+        "error_return_sites": 7,
+        "hint_names_artifact": 7
+      },
+      "maximum": 21,
+      "pct": 100.0,
+      "unit": "checks",
+      "value": 21
+    }
+  }
+}
