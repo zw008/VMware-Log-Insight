@@ -27,18 +27,18 @@ def log_search(
     """[READ] Search Log Insight events within a time window.
 
     WHEN: to find the actual log lines behind an incident (e.g. what vmkernel
-    logged on a host during a storage event). For "where did logs burst?" use
+    logged during a storage event). For "where did logs burst?" use
     log_aggregate instead; for vCenter alarms use vmware-monitor.
 
     INPUT: text = free-text search (CONTAINS). last = relative window like "1h",
-    "30m", "7d" (defaults to the last hour if no window given). begin_ms/end_ms =
-    absolute epoch-millisecond window (mutually exclusive with last). limit = max
-    events (1..20000, default 50 — narrow with text rather than raising it).
-    target = Log Insight target name from config (default if omitted).
+    "30m", "7d" (defaults to last hour). begin_ms/end_ms = absolute epoch-ms
+    window (mutually exclusive with last). limit = max events
+    (1..20000, default 50 — narrow with text, don't raise it). target =
+    target name from config.
 
-    RETURNS: {count, complete (False if truncated), constraints (the query used),
+    RETURNS: {count, complete (False if truncated), constraints,
     events: [{timestamp_ms, text, fields}]}. Feed events to vmware-debug
-    incident_timeline to correlate with other sources. Read-only."""
+    incident_timeline to correlate across sources. Read-only."""
     from vmware_log_insight.mcp_server import server
 
     try:
@@ -65,13 +65,12 @@ def log_aggregate(
 ) -> dict:
     """[READ] Aggregate matching events into a time series and detect spikes.
 
-    WHEN: to find when/whether log volume burst (e.g. an error storm) without
-    pulling raw events. Follow up with log_search on the spike window.
+    WHEN: to find when/whether log volume burst without pulling raw events. Follow up with log_search on the spike window.
 
     INPUT: text/last/begin_ms/end_ms = same query semantics as log_search.
     aggregation = COUNT|UCOUNT|AVG|MIN|MAX|SUM|STDDEV|VARIANCE|SAMPLE (default
-    COUNT). bin_width_ms = bin width in ms (default 60000 = 1 minute). target =
-    target name from config.
+    COUNT). bin_width_ms = bin width in ms (default 60000). target = target
+    name from config.
 
     RETURNS: {aggregation, bin_width_ms, constraints, bins:[{timestamp_ms,
     value}], spikes:[{timestamp_ms, value, zscore}]}. Read-only."""
@@ -97,9 +96,9 @@ def log_fields(name_filter: Optional[str] = None, target: Optional[str] = None) 
     Use this to discover valid field names before filtering log_search /
     log_aggregate. name_filter = optional case-insensitive substring. target =
     target name from config. Returns the family list envelope {items, returned,
-    limit, total, truncated, hint}; each item is {name}. There is no limit —
-    every matching field is returned, so truncated is always false and this is
-    the complete field list, not a page of it. Read-only."""
+    limit, total, truncated, hint}; each item is {name}. No limit — every
+    matching field is returned, so truncated is always false: this is the
+    complete field list, not a page. Read-only."""
     from vmware_log_insight.mcp_server import server
 
     try:
@@ -114,7 +113,9 @@ def log_fields(name_filter: Optional[str] = None, target: Optional[str] = None) 
 @vmware_tool(risk_level="low")
 def log_version(target: Optional[str] = None) -> dict:
     """[READ] Return the Log Insight appliance version/build (diagnostics and
-    query-syntax compatibility). target = target name from config. Read-only."""
+    query-syntax compatibility). target = target name from config. Use this
+    first when a query behaves unexpectedly, to confirm the appliance
+    version before trusting log_search. Read-only."""
     from vmware_log_insight.mcp_server import server
 
     try:
