@@ -29,11 +29,32 @@ def _safe_error(exc: Exception, tool: str) -> str:
     LogInsightApiError (the connection layer's teaching errors) and intentional
     validation errors pass through; anything else is masked so raw response
     bodies / host:port pairs never reach the agent.
+
+    ``OSError`` is on the list because ``config.get_password`` raises a bare one
+    to report a missing ``VMWARE_LOG_INSIGHT_<TARGET>_PASSWORD``, naming the
+    variable to set. Every tool reaches that path through ``_get_connection``,
+    so leaving it off turned the most common first-run failure in this skill
+    into ``OSError: operation failed.`` — the one message where the remedy *is*
+    the text. It subsumes the FileNotFoundError / PermissionError /
+    ConnectionError entries below, which are kept as a record of the specific
+    subclasses this package raises on purpose.
+
+    ``RuntimeError`` is deliberately absent. It is Python's generic catch-all,
+    so allowing it through would pass any library's raw text as if this package
+    had authored it.
     """
     logger.error("Tool %s failed", tool, exc_info=True)
     if isinstance(
         exc,
-        (LogInsightApiError, ValueError, FileNotFoundError, KeyError, PermissionError, ConnectionError),
+        (
+            LogInsightApiError,
+            ValueError,
+            KeyError,
+            OSError,
+            FileNotFoundError,
+            PermissionError,
+            ConnectionError,
+        ),
     ):
         return sanitize(str(exc), 300)
     return f"{type(exc).__name__}: operation failed."

@@ -55,130 +55,22 @@
     },
     "error_actionability": {
       "detail": {
-        "dead_end_count": 13,
-        "dead_end_errors": [
-          {
-            "message": "Log Insight session acquisition succeeded but no sessionId returned",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "connection.py:167"
-          },
-          {
-            "message": "No target specified and no default target configured",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "connection.py:316"
-          },
-          {
-            "message": "Log Insight authentication to {} failed: POST /sessions returned HTTP {}. {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "connection.py:149"
-          },
-          {
-            "message": "Log Insight {} {} returned HTTP {}. {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "connection.py:248"
-          },
-          {
-            "message": "invalid duration: {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "constraints.py:35"
-          },
-          {
-            "message": "empty duration",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "constraints.py:42"
-          },
-          {
-            "message": "unknown operator {}; valid: {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "constraints.py:62"
-          },
-          {
-            "message": "constraint field must not be empty",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "constraints.py:66"
-          },
-          {
-            "message": "invalid duration: {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "constraints.py:47"
-          },
-          {
-            "message": "invalid duration: {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "constraints.py:53"
-          },
-          {
-            "message": "unknown aggregation {}; valid: {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "aggregate.py:91"
-          },
-          {
-            "message": "alert_id must not be empty",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "alerts.py:71"
-          },
-          {
-            "message": "alert_id must not be empty",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "alerts.py:96"
-          }
+        "composed_hint_sites": [
+          "connection.py:260"
         ],
+        "dead_end_count": 0,
+        "dead_end_errors": [],
         "per_dimension_pct": {
-          "names_artifact": 8.7,
-          "names_input": 69.6,
-          "states_remedy": 43.5
+          "names_artifact": 100.0,
+          "names_input": 95.7,
+          "states_remedy": 100.0
         },
         "raise_sites": 23
       },
       "maximum": 69,
-      "pct": 40.6,
+      "pct": 98.6,
       "unit": "points",
-      "value": 28
+      "value": 68
     },
     "manifest_context_headroom": {
       "detail": {
@@ -246,12 +138,34 @@
       "unit": "points",
       "value": 7
     },
+    "remedy_survives_truncation": {
+      "detail": {
+        "budget_chars": 300,
+        "over_budget": [],
+        "remedy_after_interpolation": [
+          "config.py:233",
+          "config.py:218",
+          "connection.py:333",
+          "connection.py:350",
+          "connection.py:149",
+          "connection.py:159",
+          "connection.py:260",
+          "connection.py:239",
+          "constraints.py:35",
+          "constraints.py:76"
+        ]
+      },
+      "maximum": 23,
+      "pct": 100.0,
+      "unit": "messages",
+      "value": 23
+    },
     "teaching_error_rate": {
       "detail": {},
       "maximum": 23,
-      "pct": 8.7,
+      "pct": 100.0,
       "unit": "messages",
-      "value": 2
+      "value": 23
     },
     "tool_description_quality": {
       "detail": {

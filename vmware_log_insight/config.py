@@ -215,7 +215,12 @@ class AppConfig:
         cfg = self.get_target(name)
         if cfg is None:
             available = ", ".join(self.targets.keys())  # type: ignore[union-attr]
-            raise KeyError(f"Target '{name}' not found. Available: {available}")
+            raise KeyError(
+                f"Target '{name}' not found. Available: {available}. Copy an "
+                "exact name from that list, or add the target to "
+                "~/.vmware-log-insight/config.yaml and verify it with "
+                "`vmware-log-insight doctor`."
+            )
         return cfg
 
 

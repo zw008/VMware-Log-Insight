@@ -68,7 +68,11 @@ def get_alert(client: LogInsightClient, alert_id: str) -> dict:
         The alert's full (sanitized) detail dict.
     """
     if not alert_id:
-        raise ValueError("alert_id must not be empty")
+        raise ValueError(
+            "alert_id must not be empty: expected an alert id. Run alert_list "
+            "(or `vmware-log-insight alert list`) and copy an exact value from "
+            "a row's 'id' field."
+        )
     data = client.get(f"/alerts/{alert_id}")
     summary = _summarize_alert(data)
     summary["raw_keys"] = sorted(k for k in data if isinstance(k, str))
@@ -93,7 +97,11 @@ def get_alert_history(
         still reported complete when it genuinely is.
     """
     if not alert_id:
-        raise ValueError("alert_id must not be empty")
+        raise ValueError(
+            "alert_id must not be empty: expected an alert id. Run alert_list "
+            "(or `vmware-log-insight alert list`) and copy an exact value from "
+            "a row's 'id' field, then pass it to alert_history."
+        )
     data = client.get(f"/alerts/{alert_id}/history")
     records = data.get("history", data.get("records", [])) or []
     out: list[dict] = []

@@ -32,27 +32,52 @@ def parse_duration_ms(value: str | int) -> int:
     boundary, fail loudly otherwise).
     """
     if isinstance(value, bool):
-        raise ValueError(f"invalid duration: {value!r}")
+        raise ValueError(
+            f"invalid duration: {value!r}. Pass a shorthand window like '30m', "
+            "'2h', '7d', or an integer number of seconds — e.g. "
+            "log_search(last='1h')."
+        )
     if isinstance(value, int):
         if value <= 0:
-            raise ValueError(f"duration must be positive: {value!r}")
+            raise ValueError(
+                f"duration must be positive: {value!r}. Pass a shorthand window "
+                "like '30m', '2h', '7d', or a positive integer number of "
+                "seconds to log_search / log_aggregate."
+            )
         return value * 1000
     text = str(value).strip().lower()
     if not text:
-        raise ValueError("empty duration")
+        raise ValueError(
+            "empty duration: expected a shorthand window like '30m', '2h', "
+            "'7d', or an integer number of seconds. Pass e.g. "
+            "log_search(last='1h'), or omit the window entirely to default to "
+            "the last hour."
+        )
     if text[-1] in _DURATION_UNITS:
         try:
             qty = float(text[:-1])
         except ValueError as exc:
-            raise ValueError(f"invalid duration: {value!r}") from exc
+            raise ValueError(
+                f"invalid duration: {value!r}. The unit suffix is valid but the "
+                "quantity is not a number. Pass a window like '30m', '2h', "
+                "'7d' — e.g. log_search(last='1h')."
+            ) from exc
         seconds = qty * _DURATION_UNITS[text[-1]]
     else:
         try:
             seconds = float(text)
         except ValueError as exc:
-            raise ValueError(f"invalid duration: {value!r}") from exc
+            raise ValueError(
+                f"invalid duration: {value!r}. Expected a shorthand window like "
+                "'30m', '2h', '7d' (units s/m/h/d), or a bare number of "
+                "seconds. Pass e.g. log_search(last='1h')."
+            ) from exc
     if seconds <= 0:
-        raise ValueError(f"duration must be positive: {value!r}")
+        raise ValueError(
+            f"duration must be positive: {value!r}. Pass a shorthand window "
+            "like '30m', '2h', '7d', or a positive number of seconds to "
+            "log_search / log_aggregate."
+        )
     return int(seconds * 1000)
 
 
@@ -60,10 +85,16 @@ def _segment(field: str, operator: str, value: str) -> str:
     """Encode one ``field/OPERATOR/value`` constraint, URL-escaping the value."""
     if operator not in VALID_OPERATORS:
         raise ValueError(
-            f"unknown operator {operator!r}; valid: {sorted(VALID_OPERATORS)}"
+            f"unknown operator {operator!r}; valid: {sorted(VALID_OPERATORS)}. "
+            "Pick one of those exact strings — filters are encoded as "
+            "field/OPERATOR/value segments for log_search and log_aggregate."
         )
     if not field:
-        raise ValueError("constraint field must not be empty")
+        raise ValueError(
+            "constraint field must not be empty: expected a field name. Run "
+            "log_fields to list the fields this appliance actually extracts, "
+            "then use one of those names."
+        )
     # safe="" so '/', spaces, and special chars in the value are escaped and
     # don't break the path grammar.
     return f"{quote(field, safe='')}/{operator}/{quote(value, safe='')}"
@@ -94,7 +125,12 @@ def build_constraints(
     segments: list[str] = []
 
     if last is not None and (begin_ms is not None or end_ms is not None):
-        raise ValueError("pass either `last` or begin_ms/end_ms, not both")
+        raise ValueError(
+            "pass either `last` or begin_ms/end_ms, not both — expected exactly "
+            "one time window. Use last='1h' for a relative window, or "
+            "begin_ms/end_ms for an absolute epoch-millisecond window, in "
+            "log_search / log_aggregate."
+        )
 
     if last is not None:
         segments.append(f"timestamp/LAST/{parse_duration_ms(last)}")

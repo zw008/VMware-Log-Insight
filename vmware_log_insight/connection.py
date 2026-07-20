@@ -148,7 +148,9 @@ class LogInsightClient:
                 hint = _hint_for_status(status, "/sessions")
             raise LogInsightApiError(
                 f"Log Insight authentication to {self._target.host} failed: "
-                f"POST /sessions returned HTTP {status}. {hint}",
+                f"POST /sessions returned HTTP {status}. {hint} "
+                "Run `vmware-log-insight doctor` to test this target's "
+                "credentials end to end.",
                 status_code=status,
                 method="POST",
                 path="/sessions",
@@ -156,7 +158,9 @@ class LogInsightClient:
         except (httpx.TimeoutException, httpx.TransportError) as exc:
             raise LogInsightApiError(
                 f"Log Insight authentication to {self._target.host} could not "
-                f"connect: {exc}. Check the host/port and network, then retry.",
+                f"connect: {exc}. Check the target's host/port in "
+                "~/.vmware-log-insight/config.yaml and network reachability, "
+                "then retry.",
                 method="POST",
                 path="/sessions",
             ) from exc
@@ -165,7 +169,13 @@ class LogInsightClient:
         session_id = data.get("sessionId")
         if not session_id:
             raise ConnectionError(
-                "Log Insight session acquisition succeeded but no sessionId returned"
+                # Kept under the 300-char sanitize() cap: at 316 the closing
+                # remedy was cut mid-word and no agent ever received it.
+                "Log Insight accepted the credentials but returned no "
+                "sessionId. Verify host/port in "
+                "~/.vmware-log-insight/config.yaml points at a Log Insight "
+                "appliance, not a vCenter or a load-balancer front end, then "
+                "run `vmware-log-insight doctor`."
             )
         # ttl is a duration in SECONDS (not an epoch). Default ~30 min if absent.
         ttl = data.get("ttl") or _DEFAULT_TTL_SEC
@@ -228,7 +238,9 @@ class LogInsightClient:
                     continue
                 raise LogInsightApiError(
                     f"Log Insight {method} {path} could not connect: {exc}. "
-                    "Check the host/port and network, then retry.",
+                    "Check the target's host/port in "
+                    "~/.vmware-log-insight/config.yaml and network "
+                    "reachability, then retry.",
                     method=method,
                     path=path,
                 ) from exc
@@ -247,7 +259,11 @@ class LogInsightClient:
             if resp.status_code >= 400:
                 raise LogInsightApiError(
                     f"Log Insight {method} {path} returned HTTP "
-                    f"{resp.status_code}. {_hint_for_status(resp.status_code, path)}",
+                    f"{resp.status_code}. {_hint_for_status(resp.status_code, path)} "
+                    "If every call to this target fails the same way, check the "
+                    "target with `vmware-log-insight doctor`; a single failing "
+                    "path is usually a bad id or constraint, not a broken "
+                    "target.",
                     status_code=resp.status_code,
                     method=method,
                     path=path,
@@ -313,7 +329,14 @@ class ConnectionManager:
         """Get or create a LogInsightClient for the specified target."""
         name = target_name or self._config.default_target
         if not name:
-            raise ValueError("No target specified and no default target configured")
+            configured = ", ".join(self._config.targets.keys()) or "(none)"
+            raise ValueError(
+                "No target specified and no default target configured. "
+                f"Available: {configured}. Pass target=<name> with one of "
+                "those, or set default_target in "
+                "~/.vmware-log-insight/config.yaml, then verify with "
+                "`vmware-log-insight doctor`."
+            )
 
         if name in self._clients:
             if self._clients[name].is_alive_cached():
@@ -324,7 +347,12 @@ class ConnectionManager:
         target_cfg = self._config.get_target(name)
         if target_cfg is None:
             available = ", ".join(self._config.targets.keys())
-            raise ValueError(f"Target '{name}' not found. Available: {available}")
+            raise ValueError(
+                f"Target '{name}' not found. Available: {available}. Copy an "
+                "exact name from that list, or add the target to "
+                "~/.vmware-log-insight/config.yaml and verify it with "
+                "`vmware-log-insight doctor`."
+            )
 
         # Resolve both halves of the credential together — a username left
         # behind by a rotation would pair with the new password and fail.
