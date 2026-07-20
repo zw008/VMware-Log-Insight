@@ -88,10 +88,16 @@ def _hint_for_status(status_code: int, path: str) -> str:
 class LogInsightClient:
     """REST client for a single Log Insight instance."""
 
-    def __init__(self, target: TargetConfig, password: str) -> None:
+    def __init__(
+        self, target: TargetConfig, password: str, username: str | None = None
+    ) -> None:
         self._target = target
         self._base_url = f"https://{target.host}:{target.port}/api/v2"
         self._password = password
+        # Resolved by the caller (ConnectionManager) alongside the password so
+        # both halves of the credential come from the same read; falls back to
+        # the configured username for direct construction.
+        self._username = username or target.username
         self._session_id: str | None = None
         self._session_expires_at: float = 0.0
         self._liveness_checked_at: float = 0.0
@@ -121,7 +127,7 @@ class LogInsightClient:
         message instead of a raw httpx traceback.
         """
         payload = {
-            "username": self._target.username,
+            "username": self._username,
             "password": self._password,
             "provider": self._target.provider,
         }
@@ -320,7 +326,11 @@ class ConnectionManager:
             available = ", ".join(self._config.targets.keys())
             raise ValueError(f"Target '{name}' not found. Available: {available}")
 
-        client = LogInsightClient(target_cfg, target_cfg.get_password(name))
+        # Resolve both halves of the credential together — a username left
+        # behind by a rotation would pair with the new password and fail.
+        client = LogInsightClient(
+            target_cfg, target_cfg.get_password(name), target_cfg.get_username(name)
+        )
         self._clients[name] = client
         return client
 

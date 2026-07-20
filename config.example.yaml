@@ -45,3 +45,15 @@ default_target: prod
 # Or from ~/.vmware-log-insight/.env (chmod 600). Plaintext passwords there are
 # auto-rewritten to a grep-safe b64: form on first load (obfuscation, NOT
 # encryption). For real at-rest secrecy, inject from a secret manager instead.
+
+# The 'username:' above can be overridden per target the same way, so a
+# deployment that injects credentials from a secret store can externalise both
+# halves of the pair instead of just the password:
+#   VMWARE_LOG_INSIGHT_PROD_USERNAME=svc-loginsight
+#   VMWARE_LOG_INSIGHT_LAB_USERNAME=svc-loginsight
+# Unset (or empty) falls back to the 'username:' in this file. Both halves are
+# re-read on every connect, so rotating an account takes effect together — a
+# username left behind by a rotation would pair with the new password and fail.
+# Usernames are not b64-obfuscated in .env; only *_PASSWORD keys are, and a
+# username is not a secret. 'provider' is not overridable: it selects the
+# authentication realm rather than the account, so it does not rotate.

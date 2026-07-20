@@ -23,6 +23,7 @@ def _client(handler) -> LogInsightClient:
     c._target = SimpleNamespace(username="u", provider="Local", host="li.test")
     c._base_url = "https://li.test:9543/api/v2"
     c._password = "pw"
+    c._username = "u"
     c._session_id = "sess"
     c._session_expires_at = time.time() + 9999
     c._liveness_checked_at = 0.0

@@ -19,7 +19,7 @@ installer:
   package: vmware-log-insight
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_LOG_INSIGHT_CONFIG"],"bins":["vmware-log-insight"],"config":["~/.vmware-log-insight/config.yaml","~/.vmware-log-insight/.env"]},"optional":{"env":["VMWARE_LOG_INSIGHT_<TARGET>_PASSWORD","VMWARE_READ_ONLY","VMWARE_LOG_INSIGHT_READ_ONLY","VMWARE_AUDIT_APPROVED_BY"]},"primaryEnv":"VMWARE_LOG_INSIGHT_CONFIG"}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_LOG_INSIGHT_CONFIG"],"bins":["vmware-log-insight"],"config":["~/.vmware-log-insight/config.yaml","~/.vmware-log-insight/.env"]},"optional":{"env":["VMWARE_LOG_INSIGHT_<TARGET>_PASSWORD","VMWARE_LOG_INSIGHT_<TARGET>_USERNAME","VMWARE_READ_ONLY","VMWARE_LOG_INSIGHT_READ_ONLY","VMWARE_AUDIT_APPROVED_BY"]},"primaryEnv":"VMWARE_LOG_INSIGHT_CONFIG"}}
 ---
 
 # VMware Log Insight
