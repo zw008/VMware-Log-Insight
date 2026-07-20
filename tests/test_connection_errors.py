@@ -87,6 +87,40 @@ def test_transport_error_becomes_apierror_without_status():
     assert "could not connect" in str(ei.value)
 
 
+def test_transport_error_teaches_without_quoting_the_certificate():
+    """A TLS failure must name the fix, not the certificate.
+
+    ``_safe_error`` passes ``LogInsightApiError`` through verbatim, so anything
+    this layer interpolates reaches the agent. httpx renders a certificate
+    failure as ``httpx.ConnectError`` whose *text* is the raw ssl message —
+    subject and hostname included — so interpolating the exception handed that
+    to the agent, and pushed the ``verify_ssl: false`` remedy past the 300-char
+    cap so it was never delivered. A Log Insight appliance ships self-signed, so
+    this is the first thing a new operator hits.
+    """
+    from vmware_log_insight.mcp_server._shared import _safe_error
+
+    subject = "CN=loginsight-prod.corp.example.com,O=Corp"
+
+    def handler(req):
+        raise httpx.ConnectError(
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+            f"self-signed certificate in certificate chain, subject '{subject}' "
+            "(_ssl.c:1006)"
+        )
+
+    c = _client(handler)
+    with pytest.raises(LogInsightApiError) as ei:
+        c.get("/fields")
+
+    delivered = _safe_error(ei.value, "log_fields")
+    assert subject not in delivered, "the certificate subject reached the agent"
+    assert "_ssl.c" not in delivered, "raw ssl error text reached the agent"
+    # The remedy is what the message exists to deliver, so it must survive the cap.
+    assert "verify_ssl: false" in delivered
+    assert "config.yaml" in delivered
+
+
 def test_is_alive_true_on_503_false_on_401():
     assert _client(lambda r: httpx.Response(503, json={})).is_alive() is True
     assert _client(lambda r: httpx.Response(401, json={})).is_alive() is False

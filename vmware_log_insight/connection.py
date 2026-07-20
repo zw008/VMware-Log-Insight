@@ -62,12 +62,18 @@ class LogInsightApiError(Exception):
         self.path = path
 
 
-def _hint_for_status(status_code: int, path: str) -> str:
-    """Return a short, actionable remediation hint for an HTTP error status."""
+def _hint_for_status(status_code: int) -> str:
+    """Return a short, actionable remediation hint for an HTTP error status.
+
+    Deliberately free of the request path. The callers already name the failing
+    call, and naming it here too put it in the message twice — 216 of the 539
+    characters a 404 on a search path rendered, which pushed the closing remedy
+    past ``sanitize()``'s 300-char cap so the agent never received it.
+    """
     if status_code == 404:
         return (
-            f"Nothing exists at {path}. Check the id — list the parent collection "
-            "first (e.g. `alert list`) and copy an exact id."
+            "Check the id — list the parent collection first (e.g. "
+            "`vmware-log-insight alert list`) and copy an exact id."
         )
     if status_code == 400:
         return (
@@ -83,6 +89,40 @@ def _hint_for_status(status_code: int, path: str) -> str:
     if status_code >= 500:
         return "Server-side error — retry shortly; check Log Insight health."
     return "Check the request and try again."
+
+
+def _is_tls_verify_error(exc: Exception) -> bool:
+    """True if a transport error looks like a TLS certificate verification failure."""
+    text = str(exc).lower()
+    return "certificate" in text or "ssl" in text or "verify" in text
+
+
+def _transport_hint(exc: Exception) -> str:
+    """Return the remedy for a connection/timeout failure, authored not quoted.
+
+    The exception is read to choose the branch but never interpolated. Its text
+    is whatever ssl/socket produced — for a TLS failure that is the certificate
+    subject and the hostname it was checked against, for a DNS failure the name
+    that failed to resolve. ``_safe_error`` passes ``LogInsightApiError`` through
+    verbatim, so quoting the exception would hand all of that to the agent while
+    telling the operator nothing they can act on. The full text still reaches
+    the server log through ``exc_info``.
+
+    A Log Insight appliance ships with a self-signed certificate, so the TLS
+    branch is the likely one on a first connection — and its remedy was the part
+    the old message lost to truncation.
+    """
+    if _is_tls_verify_error(exc):
+        return (
+            "The certificate could not be verified — for a self-signed appliance "
+            "cert set `verify_ssl: false` for this target in "
+            "~/.vmware-log-insight/config.yaml."
+        )
+    return (
+        "Check 'host' and 'port' for this target in "
+        "~/.vmware-log-insight/config.yaml and that the appliance is reachable "
+        "from this machine."
+    )
 
 
 class LogInsightClient:
@@ -145,22 +185,20 @@ class LogInsightClient:
                     "~/.vmware-log-insight/.env."
                 )
             else:
-                hint = _hint_for_status(status, "/sessions")
+                hint = _hint_for_status(status)
             raise LogInsightApiError(
-                f"Log Insight authentication to {self._target.host} failed: "
-                f"POST /sessions returned HTTP {status}. {hint} "
-                "Run `vmware-log-insight doctor` to test this target's "
-                "credentials end to end.",
+                f"Log Insight authentication failed: POST /sessions returned "
+                f"HTTP {status}. {hint} Then run `vmware-log-insight doctor`. "
+                f"Configured host: {self._target.host}",
                 status_code=status,
                 method="POST",
                 path="/sessions",
             ) from exc
         except (httpx.TimeoutException, httpx.TransportError) as exc:
             raise LogInsightApiError(
-                f"Log Insight authentication to {self._target.host} could not "
-                f"connect: {exc}. Check the target's host/port in "
-                "~/.vmware-log-insight/config.yaml and network reachability, "
-                "then retry.",
+                f"Log Insight authentication could not connect. "
+                f"{_transport_hint(exc)} Then run `vmware-log-insight doctor`. "
+                f"Configured host: {self._target.host}",
                 method="POST",
                 path="/sessions",
             ) from exc
@@ -237,10 +275,10 @@ class LogInsightClient:
                     time.sleep(_RETRY_DELAY_SEC)
                     continue
                 raise LogInsightApiError(
-                    f"Log Insight {method} {path} could not connect: {exc}. "
-                    "Check the target's host/port in "
-                    "~/.vmware-log-insight/config.yaml and network "
-                    "reachability, then retry.",
+                    f"Log Insight request could not connect. "
+                    f"{_transport_hint(exc)} Then run `vmware-log-insight "
+                    f"doctor`. Configured host: {self._target.host}. "
+                    f"Failing call: {method} {path}",
                     method=method,
                     path=path,
                 ) from exc
@@ -258,12 +296,10 @@ class LogInsightClient:
 
             if resp.status_code >= 400:
                 raise LogInsightApiError(
-                    f"Log Insight {method} {path} returned HTTP "
-                    f"{resp.status_code}. {_hint_for_status(resp.status_code, path)} "
-                    "If every call to this target fails the same way, check the "
-                    "target with `vmware-log-insight doctor`; a single failing "
-                    "path is usually a bad id or constraint, not a broken "
-                    "target.",
+                    f"Log Insight returned HTTP {resp.status_code}. "
+                    f"{_hint_for_status(resp.status_code)} "
+                    f"Run `vmware-log-insight doctor` if every call to this "
+                    f"target fails. Failing call: {method} {path}",
                     status_code=resp.status_code,
                     method=method,
                     path=path,
@@ -330,12 +366,14 @@ class ConnectionManager:
         name = target_name or self._config.default_target
         if not name:
             configured = ", ".join(self._config.targets.keys()) or "(none)"
+            # Remedy before the target list: the list grows with the deployment
+            # and is the expendable half, so a long one must truncate itself
+            # rather than the instruction.
             raise ValueError(
-                "No target specified and no default target configured. "
-                f"Available: {configured}. Pass target=<name> with one of "
-                "those, or set default_target in "
+                "No target specified and no default target configured. Pass "
+                "target=<name>, or set default_target in "
                 "~/.vmware-log-insight/config.yaml, then verify with "
-                "`vmware-log-insight doctor`."
+                f"`vmware-log-insight doctor`. Available: {configured}"
             )
 
         if name in self._clients:
@@ -348,10 +386,10 @@ class ConnectionManager:
         if target_cfg is None:
             available = ", ".join(self._config.targets.keys())
             raise ValueError(
-                f"Target '{name}' not found. Available: {available}. Copy an "
-                "exact name from that list, or add the target to "
-                "~/.vmware-log-insight/config.yaml and verify it with "
-                "`vmware-log-insight doctor`."
+                f"Target '{name}' not found. Copy an exact name from the list "
+                "below, or add the target to ~/.vmware-log-insight/config.yaml "
+                "and verify it with `vmware-log-insight doctor`. "
+                f"Available: {available}"
             )
 
         # Resolve both halves of the credential together — a username left

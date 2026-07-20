@@ -23,12 +23,24 @@ wrapper leaves of it.
 ``RuntimeError`` is not on the list and must not be added. It is the generic
 catch-all: allowing it would pass any library's raw text through as though this
 package had authored it, which is the leak the wrapper exists to stop.
+
+The first repair of that defect overshot: it admitted bare ``OSError``, and
+``sanitize()`` only strips control characters and truncates — it redacts
+nothing, so every other OS-level failure came through with it. The passthrough
+is now the narrow ``ConfigError`` that ``config.py`` actually raises, and TLS
+errors are reduced *before* the allowlist is consulted, because
+``ssl.SSLCertVerificationError`` also inherits from ``ValueError`` and an
+allowlist cannot express "not this one".
 """
 
 from __future__ import annotations
 
+import socket
+import ssl
+
 import pytest
 
+from vmware_log_insight.config import ConfigError, TargetConfig
 from vmware_log_insight.connection import LogInsightApiError
 from vmware_log_insight.mcp_server._shared import _safe_error
 
@@ -37,14 +49,27 @@ TEACHING = (
     "that list, or add the target to ~/.vmware-log-insight/config.yaml."
 )
 
+ENV_KEY = "VMWARE_LOG_INSIGHT_PROD_PASSWORD"
+HOSTNAME = "loginsight-prod.corp.example.com"
 
-def test_missing_password_names_the_variable_to_set():
-    """The defect this test exists for: a bare OSError from get_password."""
-    out = _safe_error(
-        OSError("Password not found. Set environment variable: VMWARE_LOG_INSIGHT_PROD_PASSWORD"),
-        "log_search",
-    )
-    assert "VMWARE_LOG_INSIGHT_PROD_PASSWORD" in out
+
+def test_missing_password_names_the_variable_to_set(monkeypatch):
+    """The defect this test exists for, raised the way the package raises it.
+
+    Driven through ``get_password`` rather than fabricated: the previous version
+    constructed a bare ``OSError`` by hand and would have kept passing no matter
+    what type ``config.py`` actually raised.
+    """
+    monkeypatch.delenv(ENV_KEY, raising=False)
+    with pytest.raises(ConfigError) as exc_info:
+        TargetConfig(host="h", username="u").get_password("prod")
+
+    assert ENV_KEY in _safe_error(exc_info.value, "log_search")
+
+
+def test_config_error_is_still_an_oserror():
+    """The CLI paths that predate the narrow type catch ``OSError``."""
+    assert issubclass(ConfigError, OSError)
 
 
 def test_api_error_keeps_its_message():
@@ -54,10 +79,42 @@ def test_api_error_keeps_its_message():
 
 @pytest.mark.parametrize(
     "exc_type",
-    [ValueError, KeyError, FileNotFoundError, PermissionError, ConnectionError, OSError],
+    [ValueError, KeyError, FileNotFoundError, PermissionError, ConnectionError, ConfigError],
 )
 def test_deliberate_errors_pass_through(exc_type):
     assert "prod" in _safe_error(exc_type(TEACHING), "log_search")
+
+
+def test_os_level_failures_no_longer_carry_the_hostname():
+    """Why the passthrough is ``ConfigError`` and not the base class it extends.
+
+    A DNS failure names the host it could not resolve. That text is the
+    resolver's, not this package's. Put ``OSError`` back and this is the
+    assertion that goes red.
+    """
+    out = _safe_error(socket.gaierror(8, f"nodename nor servname provided: {HOSTNAME}"), "t")
+    assert out == "gaierror: operation failed."
+    assert HOSTNAME not in out
+
+
+def test_tls_errors_are_reduced_despite_inheriting_valueerror():
+    """The reduction has to run *before* the allowlist, not inside it.
+
+    ``ssl.SSLCertVerificationError`` inherits from ``ValueError`` as well as
+    ``OSError``, and ``ValueError`` has been on the allowlist throughout — so
+    removing ``OSError`` on its own changes nothing here. Its message quotes the
+    certificate subject and the hostname it was checked against.
+    """
+    exc = ssl.SSLCertVerificationError(
+        1,
+        "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed "
+        f"certificate in certificate chain, subject 'CN={HOSTNAME},O=Corp' (_ssl.c:1006)",
+    )
+    assert isinstance(exc, ValueError), "the co-inheritance this guard exists for is gone"
+
+    out = _safe_error(exc, "log_search")
+    assert out == "SSLCertVerificationError: operation failed."
+    assert HOSTNAME not in out
 
 
 def test_unplanned_exceptions_are_still_reduced():

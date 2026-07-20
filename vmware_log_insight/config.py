@@ -127,6 +127,16 @@ def _check_env_permissions() -> None:
 _check_env_permissions()
 
 
+class ConfigError(OSError):
+    """A configuration problem the operator can fix, safe to show an agent.
+
+    Subclasses ``OSError`` so the CLI paths that already catch ``OSError`` keep
+    working. The point of the narrow type is the MCP path: ``_safe_error``
+    passes this through verbatim, and passing through bare ``OSError`` also
+    passed through TLS, DNS and socket errors carrying hostnames and URLs.
+    """
+
+
 @dataclass(frozen=True)
 class TargetConfig:
     """A Log Insight (Aria Operations for Logs) connection target.
@@ -160,7 +170,7 @@ class TargetConfig:
         env_key = f"VMWARE_LOG_INSIGHT_{target_name.upper().replace('-', '_')}_PASSWORD"
         pw = os.environ.get(env_key, "")
         if not pw:
-            raise OSError(f"Password not found. Set environment variable: {env_key}")
+            raise ConfigError(f"Password not found. Set environment variable: {env_key}")
         return _decode_secret(pw)
 
     def get_username(self, target_name: str) -> str:

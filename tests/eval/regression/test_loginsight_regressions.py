@@ -39,3 +39,46 @@ def test_config_has_env_obfuscation_helpers():
     assert hasattr(config, "_autoencode_env_file")
     assert hasattr(config, "_decode_secret")
     assert hasattr(config, "_is_b64_token")
+
+
+def test_a_returned_error_is_audited_as_a_failure(monkeypatch):
+    """A tool that catches and returns must still be recorded as having failed.
+
+    ``@vmware_tool`` marks a call failed when an exception reaches it, or when
+    the payload it returns is the family's error envelope — a dict carrying a
+    truthy ``error``. All seven tools in this skill catch and return exactly
+    that envelope, so no explicit ``report_tool_failure`` call is needed here.
+
+    That is a property of this surface, not a guarantee, which is why it is
+    pinned: a tool rewritten to hand back an error *string* would look identical
+    to a success, and the audit row would say ``ok`` for an operation that
+    failed, with the circuit breaker told the same thing.
+    """
+    import vmware_log_insight.mcp_server.server as server
+    from vmware_log_insight.connection import LogInsightApiError
+
+    assert getattr(server.log_fields, "_is_vmware_tool", False), (
+        "log_fields is not wrapped by @vmware_tool — this test would pass "
+        "without exercising the audit path it exists to check"
+    )
+
+    rows: list[dict] = []
+
+    class _Recorder:
+        def log(self, **kw):
+            rows.append(kw)
+
+    monkeypatch.setattr("vmware_policy.decorators.get_engine", lambda: _Recorder())
+
+    def boom(target=None):
+        raise LogInsightApiError("Log Insight returned HTTP 404.", status_code=404)
+
+    monkeypatch.setattr(server, "_get_connection", boom)
+    result = server.log_fields()
+
+    assert result.get("error"), "the tool did not return the error envelope"
+    assert rows, "the wrapper recorded no audit row at all"
+    assert rows[0]["status"] == "error", (
+        f"a failed call was audited as {rows[0]['status']!r} — the audit log "
+        "and the circuit breaker both read this field"
+    )
