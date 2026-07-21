@@ -11,8 +11,6 @@ Read-only log search and aggregation for **VMware Aria Operations for Logs**
 hosts, vCenter, and VMs. The centralized-log data source for the VMware skill
 family. **Strictly non-destructive**: it queries, it never writes.
 
-- **Read-only by design — and provable** (v1.8.0): all 7 MCP tools are read, none write; set `VMWARE_READ_ONLY=true` (or the per-skill `VMWARE_LOG_INSIGHT_READ_ONLY`, or `read_only: true` in config) and the family read-only gate verifies that at startup instead of taking the docs' word for it. See [Read-Only Mode](#read-only-mode).
-
 ## Companion Skills
 
 | Need | Skill | Tools |
@@ -34,6 +32,34 @@ chmod 600 ~/.vmware-log-insight/.env
 vmware-log-insight doctor
 ```
 
+### Offline / Air-Gapped Install (from source)
+
+This project uses the modern PEP 517 build system (hatchling), so there is **no
+`setup.py`** by design — that is expected, not a missing file. If you cloned the
+source and hit `ERROR: File "setup.py" or "setup.cfg" not found ... editable mode
+currently requires a setuptools-based build`, your `pip` is older than 21.3 and
+cannot do an *editable* (`-e`) install with a non-setuptools backend. Editable
+mode is a developer convenience, not needed to run the tool — do one of:
+
+```bash
+# From the source tree — a normal (non-editable) install builds a wheel:
+pip install .              # NOT  pip install -e .
+
+# ...or upgrade pip first, and editable works too:
+pip install --upgrade pip && pip install -e .
+```
+
+For a **truly air-gapped host**, build the wheels on a connected machine and copy
+them over — the target then needs no network:
+
+```bash
+# On a connected machine, collect this package + its dependencies as wheels:
+pip wheel . -w dist        # → dist/*.whl   (or: uv build, for just this package)
+
+# Copy dist/ to the air-gapped host, then install offline:
+pip install --no-index --find-links dist vmware-log-insight
+```
+
 ## MCP Tools (7 — all read-only)
 
 | Tool | What |
@@ -43,38 +69,6 @@ vmware-log-insight doctor
 | `log_fields` | List extracted fields usable in filters |
 | `log_version` | Appliance version/build |
 | `alert_list` / `alert_get` / `alert_history` | Query defined alerts and their trigger history |
-
-## Read-Only Mode
-
-vmware-log-insight is read-only by design — all 7 MCP tools carry the `[READ]` marker and
-there are no write tools to withhold. Since v1.8.0 that is **provable rather than merely
-documented**: set `VMWARE_READ_ONLY=true` and the family read-only gate enumerates the
-registry at startup and verifies that zero write tools are exposed — structural, not a
-prompt instruction a model can ignore. **Off by default.** Fail-closed: if the mode is
-requested but cannot be guaranteed, the server refuses to start rather than running open.
-
-The same variable is family-wide: one env var also strips every write tool from the
-write-capable siblings (aiops, storage, vks, nsx, ...), so a whole-estate audit posture is
-a single setting.
-
-```json
-{
-  "mcpServers": {
-    "vmware-log-insight": {
-      "command": "vmware-log-insight",
-      "args": ["mcp"],
-      "env": { "VMWARE_READ_ONLY": "true" }
-    }
-  }
-}
-```
-
-- Per-skill override: `VMWARE_LOG_INSIGHT_READ_ONLY=true` (takes precedence over the family-wide `VMWARE_READ_ONLY`)
-- Config alternative: `read_only: true` in `~/.vmware-log-insight/config.yaml`
-
-Precedence: per-skill env → family env → config → off. Nothing is logged as withheld
-because nothing is — the gate's empty result *is* the assertion (write-capable siblings log
-`Read-only mode active ... withheld N write tool(s)` instead).
 
 ## Workflows
 

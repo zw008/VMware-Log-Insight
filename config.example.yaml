@@ -1,19 +1,6 @@
 # VMware Log Insight (Aria Operations for Logs) Configuration
 # Copy to ~/.vmware-log-insight/config.yaml and edit
 
-# Read-only mode (v1.8.0+). Off by default. When on, the family read-only gate
-# enumerates the tool registry at startup and removes every tool it cannot prove
-# is read-only. All 7 tools this skill ships are reads, so here the gate acts as
-# a proof rather than a restriction — and as a regression guard, since a tool
-# added later without a [READ] marker would be withheld instead of silently
-# inherited. Fail-closed: if the mode is requested but cannot be guaranteed, the
-# server refuses to start rather than running open.
-# Environment variables win over this key. Precedence, highest first:
-#   VMWARE_LOG_INSIGHT_READ_ONLY -> VMWARE_READ_ONLY -> this key -> off
-# Set the family-wide VMWARE_READ_ONLY instead if you want one switch to also
-# strip writes from the write-capable siblings (aiops, storage, vks, nsx, ...).
-# read_only: true
-
 targets:
   prod:
     host: loginsight.example.com
@@ -21,13 +8,11 @@ targets:
     port: 9543            # public API port (default 9543)
     verify_ssl: true
     provider: Local       # Local | ActiveDirectory | <vIDM provider name>
-    # Which environment this target is. Policy rules scope by environment, and
-    # a target that declares none is treated as unknown: state-changing
-    # operations against it currently run but log a warning, and the next major
-    # release will refuse them. Every tool this skill ships is read-only and
-    # reads are never gated, so nothing here is affected either way — this is
-    # what keeps a future write tool correctly scoped. Run 'vmware-audit policy'
-    # to see the rules in force.
+    # Optional label for this target. Every tool this skill ships is read-only,
+    # so nothing here is ever gated by this. It's a label an environment-scoped
+    # 'deny' rule in ~/.vmware/rules.yaml can match on for the write skills —
+    # e.g. freeze writes on 'production'. A target with no label is simply not
+    # matched by such a rule.
     environment: production
   lab:
     host: 10.0.0.50

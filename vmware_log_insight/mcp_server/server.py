@@ -22,7 +22,7 @@ import logging
 import sys
 from typing import Optional
 
-from vmware_policy import apply_read_only_gate, mtime_cached_loader, set_environment_resolver
+from vmware_policy import mtime_cached_loader, set_environment_resolver
 
 from vmware_log_insight.config import CONFIG_FILE, load_config
 
@@ -54,33 +54,6 @@ from vmware_log_insight.mcp_server.tools.logs import (  # noqa: F401
     log_fields,
     log_search,
     log_version,
-)
-
-# ---------------------------------------------------------------------------
-# Read-only gate
-# ---------------------------------------------------------------------------
-
-
-def _config_read_only() -> Optional[bool]:
-    """Best-effort read of ``read_only`` from the config file.
-
-    Runs at import time, when no config file need exist yet (tests, ``--help``,
-    smoke checks), so every failure degrades to "not configured" and lets the
-    env vars decide. None and False are equivalent here — config is the last
-    link in the precedence chain — but None keeps 'not configured'
-    distinguishable from 'configured off' in logs and debugging.
-    """
-    try:
-        return load_config().read_only
-    except Exception:  # noqa: BLE001 — absent/unreadable config is not an error here
-        return None
-
-
-# Applied once, after every tool module above has registered. All 7 tools are
-# read-only, so nothing is withheld — the empty list is the assertion that this
-# skill really is non-destructive, checked by tests/eval/regression.
-WITHHELD_WRITE_TOOLS: list[str] = apply_read_only_gate(
-    mcp, "vmware-log-insight", config_flag=_config_read_only()
 )
 
 
@@ -118,7 +91,6 @@ set_environment_resolver(_environment_for)
 __all__ = [
     "mcp",
     "main",
-    "WITHHELD_WRITE_TOOLS",
     "_environment_for",
     "_safe_error",
     "_get_connection",

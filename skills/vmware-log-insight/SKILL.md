@@ -19,7 +19,7 @@ installer:
   package: vmware-log-insight
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_LOG_INSIGHT_CONFIG"],"bins":["vmware-log-insight"],"config":["~/.vmware-log-insight/config.yaml","~/.vmware-log-insight/.env"]},"optional":{"env":["VMWARE_LOG_INSIGHT_<TARGET>_PASSWORD","VMWARE_LOG_INSIGHT_<TARGET>_USERNAME","VMWARE_READ_ONLY","VMWARE_LOG_INSIGHT_READ_ONLY","VMWARE_AUDIT_APPROVED_BY"]},"primaryEnv":"VMWARE_LOG_INSIGHT_CONFIG"}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_LOG_INSIGHT_CONFIG"],"bins":["vmware-log-insight"],"config":["~/.vmware-log-insight/config.yaml","~/.vmware-log-insight/.env"]},"optional":{"env":["VMWARE_LOG_INSIGHT_<TARGET>_PASSWORD","VMWARE_LOG_INSIGHT_<TARGET>_USERNAME","VMWARE_AUDIT_APPROVED_BY"]},"primaryEnv":"VMWARE_LOG_INSIGHT_CONFIG"}}
 ---
 
 # VMware Log Insight
@@ -114,16 +114,11 @@ fills `limit` is still reported `truncated: false` when it is genuinely complete
 absolute `begin_ms`/`end_ms` (epoch ms); `text` is a CONTAINS search. See
 `references/cli-reference.md` for the full constraint grammar.
 
-## Read-Only Mode
+## Read-Only by Design
 
-All 7 tools here are reads, so read-only mode withholds nothing — but
-`VMWARE_LOG_INSIGHT_READ_ONLY=true`, the family-wide `VMWARE_READ_ONLY=true`, or
-`read_only: true` in `config.yaml` still applies, and the gate verifies at start-up that
-zero write tools are exposed rather than taking this document's word for it. The same
-family variable withholds write tools across every companion skill, so a whole-estate audit
-posture is one setting: if a companion's write tool is absent from *its* `list_tools()`,
-that is the lockdown, not a fault — report the blocked operation instead of retrying.
-`vmware-log-insight doctor` reports the resolved state and which switch set it. Running with local or small models? See [`references/agent-guardrails.md`](references/agent-guardrails.md).
+All 7 tools here are reads — no ingest, no alert creation/edit/delete, zero
+write surface. Running with local or small models? See
+[`references/agent-guardrails.md`](references/agent-guardrails.md).
 
 ## CLI Quick Reference
 

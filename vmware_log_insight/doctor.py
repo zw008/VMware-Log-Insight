@@ -14,48 +14,6 @@ _log = logging.getLogger("vmware-log-insight.doctor")
 console = Console()
 
 
-def _config_read_only() -> bool | None:
-    """Best-effort read of ``read_only`` from the config file.
-
-    Mirrors the ``config_flag`` that ``vmware_log_insight.mcp_server.server`` hands
-    :func:`vmware_policy.readonly.apply_read_only_gate`. It must stay identical:
-    a doctor that resolves the flag differently from the gate reports a state the
-    server does not have. Deliberately uses the default config path, because that
-    is the one the gate reads — ``run_doctor(config_path=...)`` inspects some
-    other file, not the deployment.
-    """
-    from vmware_log_insight.config import load_config
-
-    try:
-        return load_config().read_only
-    except Exception:  # noqa: BLE001 — absent/unreadable config is not an error here
-        return None
-
-
-def _check_read_only() -> tuple[bool, str]:
-    """Report the resolved read-only state and where it came from.
-
-    Never fails — read-only being on is a posture, not a fault. It is here
-    because an operator who set the switch had no way to confirm it took: the
-    only signal was a line in the MCP server's start-up log.
-    """
-    from vmware_policy.readonly import read_only_status
-
-    status = read_only_status("vmware-log-insight", _config_read_only())
-    if not status.recognised:
-        return True, (
-            f"{status.source}={status.raw!r} is not a recognised value. It resolves "
-            f"to ON (fail-closed), so any write tool would be withheld — probably "
-            f"not what was intended. Use true or false."
-        )
-    if status.enabled:
-        return True, (
-            f"ON (from {status.source}) — no write tools exist here; the gate "
-            f"verifies that at start-up."
-        )
-    return True, f"off (from {status.source}) — this skill is read-only either way"
-
-
 def run_doctor(config_path: Path | None = None, skip_auth: bool = False) -> bool:
     """Run all pre-flight checks. Returns True if all pass."""
     from vmware_log_insight.config import CONFIG_FILE, ENV_FILE, load_config
@@ -91,13 +49,6 @@ def run_doctor(config_path: Path | None = None, skip_auth: bool = False) -> bool
         checks.append(("Config parse", True, f"{len(config.targets)} target(s) configured"))
     except Exception as e:
         checks.append(("Config parse", False, str(e)))
-
-    # 3b. Read-only mode — a state report, not a pass/fail gate. Placed before the
-    # early return below because the switch is resolved from the environment and
-    # holds whether or not a config file parses: an operator debugging a broken
-    # config still needs to know the deployment is locked down.
-    passed, detail = _check_read_only()
-    checks.append(("Read-only mode", passed, detail))
 
     if config is None:
         _print_table(checks)
